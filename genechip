@@ -1,0 +1,53 @@
+# load matrix
+## switch cel files to matrix.
+##  https://icode.best/i/53074535596845
+if(F){
+library(affy)
+
+dir_cels <- "./test"
+affyData <- ReadAffy(celfile.path = dir_cels)
+## normalization to get matrix
+est1=rma(affyData)
+dat1=exprs(est1)
+}
+##1 get matrix by download the matrix from geo
+if(F){
+dat2=read.table("GSE148350_series_matrix.txt.gz",header = T,sep = "\t",comment.char = '!')
+}
+##2 get matrix by GetGEO package
+library(GEOquery) 
+gset <- getGEO("GSE148350", destdir = ".", AnnotGPL = F, getGPL = F)
+dat1=exprs(gset[[1]])
+ph1=pData(gset[[1]])
+ph1$group=str_sub(ph1$title,1,-3)
+phenotype=data.frame(sample=ph1$geo_accession,group=ph1$group)
+
+# annotation
+##1 look through the website to find the db
+## BiocManager::install("ragene10sttranscriptcluster.db")
+library("ragene10sttranscriptcluster.db")
+ids=toTable(ragene10sttranscriptclusterSYMBOL)
+##2 download GPL soft infromation from GEO and need some shell command to reconstructed data
+## keep repeated symbl by add number post the names
+if(F){
+ids$symbol=make.unique(ids$symbol)
+dat1=as.data.frame(dat1)
+dat1=dat1[ids$probe_id,]
+dat1$symbl=ids$symbol
+rownames(dat1)=dat1$symbl
+dat1$symbl=NULL
+}
+## unique the rownames
+dat1=as.data.frame(dat1)
+dat1$md=apply(dat1,1,sd)
+dat1=dat1[ids$probe_id,]
+dat1$symbl=ids$symbol
+dat1=dat1[with(dat1,order(symbl,md,decreasing = T)),]
+dat1=dat1[!duplicated(dat1$symbl),]
+rownames(dat1)=dat1$symbl
+dat1$symbl=NULL
+dat1$md=NULL
+
+save(dat1,phenoData, file = "./rawdata.Rdata")
+
+
