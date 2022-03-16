@@ -30,7 +30,7 @@ ids=toTable(ragene10sttranscriptclusterSYMBOL)
 ##2 download GPL soft infromation from GEO and need some shell command to reconstructed data
 ## keep repeated symbl by add number post the names
 if(F){
-ids$symbol=make.unique(ids$symbol)
+ids$symbol=make.unique(ids$symbol)   ###使重复基因添加序号
 dat1=as.data.frame(dat1)
 dat1=dat1[ids$probe_id,]
 dat1$symbl=ids$symbol
