@@ -1,0 +1,15 @@
+#convert ID  method 1
+library('biomaRt')
+## 查看种类数据名称 listDatasets(mart)
+mart <- useEnsembl("ensembl", "hsapiens_gene_ensembl")
+ensemble2gene <- getBM(attributes=c("external_gene_name","ensembl_gene_id"), #"ensembl_transcript_id" could be add
+                       filters = "ensembl_gene_id",
+                       values =rownames(control2), # ensembl ID
+                       mart = mart)
+                       
+#convert ID  method 2
+## 三种数据类型 ENSEMBL ENTREZID SYMBOL
+library("org.Hs.eg.db")
+library("clusterProfiler")
+mydata <- read_excel("mydata.xlsx")
+conmydata= bitr(geneID = rownames(control2), fromType = "ENSEMBL",toType = "SYMBOL", OrgDb = org.Hs.eg.db )
