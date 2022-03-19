@@ -3,7 +3,7 @@
 
 # http://www.bio-info-trainee.com/1399.html
 ## 查找芯片注释信息
-
+# 注释
 library("rat2302.db")
 ls("package:rat2302.db")
 ids=toTable(rat2302SYMBOL)
