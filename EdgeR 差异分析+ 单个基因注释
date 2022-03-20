@@ -1,0 +1,41 @@
+# 分析差异基因
+load("prodat.Rdata")
+
+library(edgeR)
+counts<-prodat
+colnames(counts)
+# 分组
+group<-c(rep(1,5),rep(2,18))
+design <- model.matrix(~group)
+d=DGEList(counts=counts, group=group)
+d=calcNormFactors(d)
+# PCA看批次效应
+plotMDS(d, labels=colnames(counts),col=c("blue","red")[factor(group)])
+# 开始差异分析
+d=estimateDisp(d,design)
+fit <- glmFit(d, design)
+fit2 <- glmLRT(fit, coef = 2)
+table.all <-topTags(fit2,n=Inf)
+# add adj.pvalue
+dat1=table.all$table
+dat1$adj.P <- p.adjust(dat1$PValue,"fdr")
+# NC 筛出来的DEGs，标准
+dat=subset(dat1,PValue<0.05 & FDR <0.05)
+
+
+# 只是单个基因的信息，先找下面数据库中“EnsDb”开头的注释包
+- http://www.bioconductor.org/packages/release/BiocViews.html#___AnnotationData
+
+BiocManager::install('EnsDb.Hsapiens.v75')
+library(EnsDb.Hsapiens.v75)
+edb <- EnsDb.Hsapiens.v75
+keys <- keys(edb, keytype="GENEID")
+## Get the data
+gene2sym<-select(edb, keys=keys, 
+                 columns=c("SYMBOL","ENTREZID","GENEBIOTYPE",'GENENAME'),
+                 keytype="GENEID")
+# 取出"protein_coding"相关基因
+test1=subset(gene2sym,GENEBIOTYPE=="protein_coding")
+dat=dat[intersect(test1$SYMBOL,rownames(dat)),]
+
+
