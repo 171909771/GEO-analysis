@@ -25,6 +25,7 @@ dat=subset(dat1,PValue<0.05 & FDR <0.05)
 
 # 只是单个基因的信息，先找下面数据库中“EnsDb”开头的注释包
 - http://www.bioconductor.org/packages/release/BiocViews.html#___AnnotationData
+# 具体方法：https://cloud.tencent.com/developer/article/1511784
 
 BiocManager::install('EnsDb.Hsapiens.v75')
 library(EnsDb.Hsapiens.v75)
