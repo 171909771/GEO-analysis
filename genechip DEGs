@@ -14,6 +14,7 @@ dat1 = dat1[rownames(dat1) %in% ids$probe_id,]
 ids=ids[match(rownames(dat1),ids$probe_id),]
 
 # 过滤多余的基因
+##########记住如果dat1不是dataframe，一定要把它变成dataframe，不然看不到行名，可以用class查看
 tmp = by(dat1,
          ids$symbol,
          function(x) rownames(x)[which.max(rowMeans(x))])  #取最大平均值
