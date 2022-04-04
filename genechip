@@ -6,6 +6,10 @@ library(affy)
 
 dir_cels <- "./test"
 affyData <- ReadAffy(celfile.path = dir_cels)
+### oligo 读取
+library(oligo)
+rawData <- read.celfiles(cel.files) 
+
 ## normalization to get matrix
 est1=rma(affyData)
 dat1=exprs(est1)
