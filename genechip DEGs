@@ -1,59 +1,40 @@
-# https://www.bioconductor.org/packages/devel/workflows/vignettes/RNAseq123/inst/doc/limmaWorkflow_CHN.html
-# http://www.4k8k.xyz/article/leianuo123/111800603
-# http://www.360doc.com/content/20/0202/12/42030643_889214005.shtml
-# https://zhuanlan.zhihu.com/p/344426350
-
-# http://www.bio-info-trainee.com/1399.html
-## 查找芯片注释信息
-# 注释
-library("rat2302.db")
-ls("package:rat2302.db")
-ids=toTable(rat2302SYMBOL)
-dat1=read.delim("GSE97537_series_matrix.txt.gz",comment.char = "!",row.names=1)
-
-# remove 多余的基因名
-dat1 = dat1[rownames(dat1) %in% ids$probe_id,]
-ids=ids[match(rownames(dat1),ids$probe_id),]
-
-# 过滤多余的基因
-##########记住如果dat1不是dataframe，一定要把它变成dataframe，不然看不到行名，可以用class查看
-tmp = by(dat1,
-         ids$symbol,
-         function(x) rownames(x)[which.max(rowMeans(x))])  #取最大平均值
-probes = as.character(tmp)
-dim(dat1)
-dat1 = dat1[rownames(dat1) %in% probes,] # 过滤有多个探针的基因
-dim(dat1)
-rownames(dat1)=ids[match(rownames(dat1),ids$probe_id),2]
+BiocManager::install("Glimma")
+library(limma)
+library(Glimma)
+library(edgeR)
+library(Mus.musculus)
+load("final.Rdata")
 
 
+# 通过EdgeR过滤数据： http://www.senlinstudy.xyz/?p=832
 
-# QC
-## 分组信息
-exp=dat1
-group_list=c(rep("control",times=7),rep("treat",times=5))
-colnames(exp) = paste(group_list,1:12,sep='')
-head(exp)
-## 定义nodePar
-nodePar <- list(lab.cex = 0.6, pch = c(NA, 19), 
-              cex = 0.7, col = "blue")
-## 确定是否normalization
-library(reshape2)
-head(exp)
-exp_L = melt(exp)
-head(exp_L)
-colnames(exp_L)=c('sample','value')
-head(exp_L)
-exp_L$group = rep(group_list,each=nrow(exp))
-library(ggplot2)
-ggplot(exp_L,
-           aes(x=sample,y=value,fill=group))+geom_boxplot()
-## 如果不平
+
+# 分组
+group= c(rep(c("ctrl","trt"),6))
+lane=c(rep(1:6,each=2)) ##批次分组
+## 把matrix转换呈就用EdgeR data
+y <- DGEList(counts=dat6,group=group)
+## 添加另外的分组信息
+levels(lane)=unique(lane)
+y$samples$lane=lane
+
+
+# 归一化和标准化
+## 如果是counts，就用EdgeR 转换数据，calcNormFactors具有标准化和归一化的作用
+## 解释calcNormFactors： https://www.jianshu.com/p/9ae0865d3bc8
+## 解释calcNormFactors出来的数据在$norm.factors中，显示的的scale的比例
+x2 <- calcNormFactors(y, method = "TMM")  
+
+
+# 聚类分析检验
+## 批次上色
+col.lane <- lane
+levels(col.lane) <-  brewer.pal(length(unique(col.lane)), "Set2")
+## limma自带的PCA
+plotMDS(y, col=col.lane,labels=group, dim=c(3,4)) # 查看PCA 前2维度
+title(main="A. Sample groups")
+
 if(F){
-  exp = normalizeBetweenArrays(exp)}
-
-
-
 ## 聚类
 hc=hclust(dist(t(exp)))
 par(mar=c(5,5,5,10)) 
@@ -63,28 +44,39 @@ library(ggfortify)
 df=as.data.frame(t(exp))
 df$group=group_list 
 autoplot(prcomp( df[,1:(ncol(df)-1)] ), data=df,colour = 'group')
+}
 
+## 网页可视化
+glMDSPlot(y, labels=paste(group, lane, sep="_"), 
+          groups=y$samples[c(1,4)], launch=FALSE)
 
 # 差异分析
-library(limma)
-## 做分组矩阵 
-design <- model.matrix(~0+factor(group_list))
-colnames(design)=levels(factor(group_list))
-rownames(design)=colnames(exp)
-contrast.matrix<-makeContrasts(paste0(c("treat","control"),collapse = "-"),levels = design)
-## DEGs
-fit <- lmFit(exp,design)
-##step2
-fit2 <- contrasts.fit(fit, contrast.matrix) ##这一步很重要，大家可以自行看看效果
-fit3 <- eBayes(fit)  ## default no trend !!!
-##eBayes() with trend=TRUE
-##step3
-tempOutput = topTable(fit3, coef=1, n=Inf)
-nrDEG = na.omit(tempOutput) 
-nrDEG$genenames=rownames(nrDEG)
+## ~0 代表没有+后面第一个factor的截距，形成一个列表
+## 如何理解：https://treeh.cn/?id=21
+## 如何理解：https://shixiangwang.github.io/home/cn/post/2020-10-29-what-has-been-done-when-use-limma/
+design <- model.matrix(~0+group)
+colnames(design)=levels(factor(group))
+rownames(design)=colnames(dat6)
+## 建立对比关系
+contrast.matrix<-makeContrasts(ctrlvstrt=ctrl - trt,levels = design)
 
-sig.gene=subset(nrDEG,adj.P.Val<0.01 & logFC< -0.4)
 
-genename=rownames(sig.gene)
-library(writexl)
-write_xlsx(sig.gene,"abc.xlsx")
+# voom limma自带的标准化工具，对原始counts可以用这种方法
+# https://www.jieandze1314.com/post/cnposts/90/
+v <- voom(dat6, design, plot=TRUE)
+
+# 线性回归
+
+vfit <- lmFit(dat6, design)
+vfit1 <- contrasts.fit(vfit, contrasts=contrast.matrix)
+
+## 贝叶斯算法：http://rvdsd.top/2019/08/19/Data%20Analysis%20for%20the%20life%20sciences/DALS019_StatisticalModels2_Beyes_Hierarchical/
+## 贝叶斯算法：https://www.jianshu.com/p/1cfffa115c08
+### 就是把每个基因的方差趋同于整个基因的趋势
+efit <- eBayes(vfit)
+efit1 <- eBayes(vfit1)
+
+
+tempOutput1 = topTable(efit, coef=1, n=Inf)
+tempOutput2 = topTable(efit1, n=Inf)
+
