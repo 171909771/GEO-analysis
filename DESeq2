@@ -1,0 +1,15 @@
+library("DESeq2")
+library("edgeR")
+
+# 构建分组
+cond <- factor(rep(1:2, each=3))
+# 转换数据为整数
+DATA3[,1:8]=sapply(DATA3[,1:8], as.integer)
+# 构建分组
+dds <- DESeqDataSetFromMatrix(DATA3, DataFrame(cond), ~ cond)
+# Deseq standard analysis
+dds <- DESeq(dds)
+res <- results(dds)
+res1=data.frame(res)
+res2=dplyr::filter(res1, padj<0.05)
+res2up=dplyr::filter(res2,abs(log2FoldChange)>2)
