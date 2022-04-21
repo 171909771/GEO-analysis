@@ -1,0 +1,73 @@
+https://mp.weixin.qq.com/s?__biz=MzAxMDkxODM1Ng==&mid=2247513030&idx=3&sn=5ef61480e4e7228f7b76485832d3ae0e&chksm=9b4bf37dac3c7a6b859303292a2b300309826bbc9345e6f6c17c1d6ba3c2541f39db207d19cc&mpshare=1&scene=1&srcid=0420yyCBqZOFxmDU8XpQqAHV&sharer_sharetime=1650520424078&sharer_shareid=0cdcf284bc426c9af2f9246b33b7ac7f&exportkey=AXiEAA3gvIsools1E1SV0vY%3D&acctmode=0&pass_ticket=pHYiaUnOX%2F3LY9xhITzQ4MNOV3RKDS1uyDmDquiwJ6phBUxGUUS3cg1hzeOw32F0&wx_header=0#rd
+
+######## 读取实例数据
+rm(list = ls())
+BiocManager::install("GEOquery")
+library(GEOquery)
+library(stringr)
+gse = "GSE83521"
+eSet1 <- getGEO("GSE83521", 
+                destdir = '.', 
+                getGPL = F)
+eSet2 <- getGEO("GSE89143", 
+                destdir = '.', 
+                getGPL = F)
+#(1)提取表达矩阵exp
+exp1 <- exprs(eSet1[[1]])
+exp1[1:4,1:4]
+exp2 <- exprs(eSet2[[1]])
+exp2[1:4,1:4]
+exp2 = log2(exp2+1)
+table(rownames(exp1) %in% rownames(exp2))
+length(intersect(rownames(exp1),rownames(exp2)))
+exp1 <- exp1[intersect(rownames(exp1),rownames(exp2)),]
+exp2 <- exp2[intersect(rownames(exp1),rownames(exp2)),]
+boxplot(exp1)
+boxplot(exp2)
+
+#(2)提取临床信息
+pd1 <- pData(eSet1[[1]])
+pd2 <- pData(eSet2[[1]])
+if(!identical(rownames(pd1),colnames(exp1))) exp1 = exp1[,match(rownames(pd1),colnames(exp1))]
+if(!identical(rownames(pd2),colnames(exp2))) exp2 = exp2[,match(rownames(pd2),colnames(exp2))]
+
+#(3)提取芯片平台编号
+gpl <- eSet2[[1]]@annotation
+
+#(4)合并表达矩阵
+# exp2的第三个样本有些异常，可以去掉或者用normalizeBetweenArrays标准化，把它拉回正常水平。
+
+exp2 = exp2[,-3]
+
+exp = cbind(exp1,exp2)
+boxplot(exp)
+Group1 = ifelse(str_detect(pd1$title,"Tumour"),"Tumour","Normal")
+Group2 = ifelse(str_detect(pd2$source_name_ch1,"Paracancerous"),"Normal","Tumour")[-3]
+
+Group = c(Group1,Group2)
+table(Group)
+Group = factor(Group,levels = c("Normal","Tumour"))
+save(gse,Group,exp,gpl,file = "exp.Rdata")
+
+
+#################### 第一种方法消除批次效应
+library(limma)
+#?removeBatchEffect()
+batch <- c(rep("A",12),rep("B",5))
+exp2 <- removeBatchEffect(exp, batch)
+par(mfrow=c(1,2))  # 展示的图片为一行两列
+boxplot(as.data.frame(exp),main="Original")
+boxplot(as.data.frame(exp2),main="Batch corrected")
+
+##################### 第二种方法消除批次效应
+BiocManager::install("sva")
+library(sva)
+#?ComBat
+
+batch <- c(rep("A",12),rep("B",5))
+mod = model.matrix(~Group)
+exp2 = ComBat(dat=exp, batch=batch, 
+              mod=mod, par.prior=TRUE, ref.batch="A")
+par(mfrow=c(1,2))
+boxplot(as.data.frame(exp),main="Original")
+boxplot(as.data.frame(exp2),main="Batch corrected")
