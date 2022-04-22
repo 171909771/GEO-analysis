@@ -4,7 +4,7 @@ load("prodat.Rdata")
 library(edgeR)
 counts<-prodat
 colnames(counts)
-# 分组
+# 分组, 归一化和标准化
 group<-c(rep(1,5),rep(2,18))
 design <- model.matrix(~group)
 d=DGEList(counts=counts, group=group)
