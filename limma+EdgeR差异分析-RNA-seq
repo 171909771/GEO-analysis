@@ -76,7 +76,7 @@ vfit1 <- contrasts.fit(vfit, contrasts=contrast.matrix)
 efit <- eBayes(vfit)
 efit1 <- eBayes(vfit1)
 
-
+# coef是取makeContrasts中第几个比较
 tempOutput1 = topTable(efit, coef=1, n=Inf)
 tempOutput2 = topTable(efit1, n=Inf)
 
