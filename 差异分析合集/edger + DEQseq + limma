@@ -1,0 +1,144 @@
+dat = data.table::fread("GSE162550_gene_sample_count_with_symbol.xls.gz",data.table = F)
+
+k = dat$Symbol!="---";table(k)
+dat = dat[k,]
+
+k2 = !duplicated(dat$Symbol)
+dat = dat[k2,]
+
+exp = dat[,-(1:3)]
+rownames(exp) = dat$Symbol
+exp = as.matrix(exp)
+exp = exp[apply(exp, 1, function(x) sum(x > 0) >= 0.5*ncol(exp)), ]
+
+Group = rep(c("DMSO","DHA"),each = 3)
+Group = factor(Group,levels = c("DMSO","DHA"))
+table(Group)
+
+################## 查看批次效应
+# cpm 去除文库大小的影响
+dat = log2(cpm(exp)+1)
+library(tinyarray)
+pca.plot = draw_pca(dat,Group);pca.plot
+
+
+##################差异分析
+#deseq2----
+library(DESeq2)
+colData <- data.frame(row.names =colnames(exp), 
+                      condition=Group)
+
+  dds <- DESeqDataSetFromMatrix(
+    countData = exp,
+    colData = colData,
+    design = ~ condition)
+  dds <- DESeq(dds)
+
+res <- results(dds, contrast = c("condition",rev(levels(Group))))
+#constrast
+c("condition",rev(levels(Group)))
+class(res)
+DEG1 <- as.data.frame(res)
+DEG1 <- DEG1[order(DEG1$pvalue),] 
+DEG1 = na.omit(DEG1)
+head(DEG1)
+
+#添加change列标记基因上调下调
+logFC_t = 2
+pvalue_t = 0.05
+
+k1 = (DEG1$pvalue < pvalue_t)&(DEG1$log2FoldChange < -logFC_t);table(k1)
+k2 = (DEG1$pvalue < pvalue_t)&(DEG1$log2FoldChange > logFC_t);table(k2)
+DEG1$change = ifelse(k1,"DOWN",ifelse(k2,"UP","NOT"))
+table(DEG1$change)
+head(DEG1)
+
+#edgeR----
+library(edgeR)
+
+dge <- DGEList(counts=exp,group=Group)
+
+dge <- calcNormFactors(dge) 
+
+design <- model.matrix(~Group)
+
+
+dge <- estimateDisp(dge, design)
+
+fit <- glmFit(dge, design)
+fit <- glmLRT(fit) 
+
+DEG2=topTags(fit, n=Inf)
+class(DEG2)
+DEG2=as.data.frame(DEG2)
+head(DEG2)
+
+k1 = (DEG2$PValue < pvalue_t)&(DEG2$logFC < -logFC_t);table(k1)
+k2 = (DEG2$PValue < pvalue_t)&(DEG2$logFC > logFC_t);table(k2)
+DEG2$change = ifelse(k1,"DOWN",ifelse(k2,"UP","NOT"))
+
+head(DEG2)
+table(DEG2$change)
+###limma----
+library(limma)
+# 标准化
+dge <- edgeR::DGEList(counts=exp)
+dge <- edgeR::calcNormFactors(dge)
+
+## 建立对比关系
+design <- model.matrix(~0+Group)
+colnames(design)=levels(factor(Group))
+rownames(design)=colnames(exp)
+
+contrast.matrix<-makeContrasts(DMSOvsDHA=DMSO - DHA,levels = design)
+
+
+v <- voom(dge,design, normalize="quantile")
+fit <- lmFit(v, design)
+fit <- contrasts.fit(fit, contrasts=contrast.matrix)
+fit= eBayes(fit)
+
+DEG3 = topTable(fit, coef=1, n=Inf)
+DEG3 = na.omit(DEG3)
+
+k1 = (DEG3$P.Value < pvalue_t)&(DEG3$logFC < -logFC_t);table(k1)
+k2 = (DEG3$P.Value < pvalue_t)&(DEG3$logFC > logFC_t);table(k2)
+DEG3$change = ifelse(k1,"DOWN",ifelse(k2,"UP","NOT"))
+table(DEG3$change)
+head(DEG3)
+
+# 3种算法高、低表达
+
+tj = data.frame(deseq2 = as.integer(table(DEG1$change)),
+                edgeR = as.integer(table(DEG2$change)),
+                limma_voom = as.integer(table(DEG3$change)),
+                row.names = c("down","not","up")
+)
+###############可视化
+library(ggplot2)
+library(tinyarray)
+exp[1:4,1:4]
+
+
+cg1 = rownames(DEG1)[DEG1$change !="NOT"]
+cg2 = rownames(DEG2)[DEG2$change !="NOT"]
+cg3 = rownames(DEG3)[DEG3$change !="NOT"]
+
+h1 = draw_heatmap(dat[cg1,],Group,n_cutoff = 2)
+h2 = draw_heatmap(dat[cg2,],Group,n_cutoff = 2)
+h3 = draw_heatmap(dat[cg3,],Group,n_cutoff = 2)
+
+v1 = draw_volcano(DEG1,pkg = 1,logFC_cutoff = logFC_t)
+v2 = draw_volcano(DEG2,pkg = 2,logFC_cutoff = logFC_t)
+v3 = draw_volcano(DEG3,pkg = 3,logFC_cutoff = logFC_t)
+
+library(patchwork)
+(h1 + h2 + h3) / (v1 + v2 + v3) +plot_layout(guides = 'collect') &theme(legend.position = "none")
+
+library(VennDiagram)
+T1=venn.diagram(list(A=rownames(DEG1[DEG1$change=="UP",]),
+                  B=rownames(DEG2[DEG1$change=="UP",]),
+                  C=rownames(DEG3[DEG1$change=="UP",])),filename=NULL,lwd=1,lty=2,col=c('red','green','blue') ,fill=c('red','green','blue'),
+             cat.col=c('red','green','blue'),reverse=TRUE)
+
+grid.draw(T1)
