@@ -182,12 +182,100 @@ plotEigengeneNetworks(MET, "Eigengene adjacency heatmap", marHeatmap = c(3,4,2,2
                       plotDendrograms = FALSE, xLabelsAngle = 90)
 ```
 
+## 提取兴趣模块中的基因
+```r
+module = "violet"
+probes = colnames(datExpr) ## 我们例子里面的probe就是基因
+inModule = (mergedColors==module)
+modProbes = probes[inModule]  # modProbes 中就是改module的基因
+```
 
 
 
+## 查看选定固定模块中基因在不同分组中的热图
+```r
+which.module="violet"
+```
+### WGCNA图，太丑用下面的方法
+```r
+if(F){
+dat=datExpr[,mergedColors==which.module]
+plotMat(t(scale(dat)),nrgcols=30,rlabels=T,
+        clabels=T,rcols=which.module,
+        title=which.module )
+      }
+```
+### 自制热图
+```r
+dat=t(datExpr[,mergedColors==which.module ] )
+library(pheatmap)
+pheatmap(dat ,show_colnames =F,show_rownames = F) #对那些提取出来的1000个基因所在的每一行取出，组合起来为一个新的表达矩阵
+n=t(scale(t(log(dat+1)))) # 'scale'可以对log-ratio数值进行归一化
+n[n>2]=2 
+n[n< -2]= -2
+n[1:4,1:4]
+pheatmap(n,show_colnames =F,show_rownames = F)
+group_list=datTraits$Group  # 不加group可以看到所有分组
+ac=data.frame(g=group_list)
+rownames(ac)=colnames(n) 
+pheatmap(n,show_colnames =F,show_rownames = F,
+         annotation_col=ac)
+```
+#### 可以很清晰的看到，所有的形状相关的模块基因
+![90672030-2ac3-4846-b506-f7bafd797237](https://user-images.githubusercontent.com/41554601/170814306-c34c6215-0087-484a-86cf-862c0e2ea3a2.png)
+
+## 可以看模块与模块的关系，模块与表型的关系
+- https://www.omicsclass.com/article/402 #解释下面的模块
+```r
+plotMEpairs(MEs[1:8],y=datTraits$Group)
+```
+![fe8baa0c-7c9d-40de-af6b-1fa643d73893](https://user-images.githubusercontent.com/41554601/170814429-77948ec3-d42a-4d79-b380-e1feaa3e99cb.png)
 
 
-
+## 找module中的hubgenes，3steps
+- https://www.jianshu.com/p/f0409a045dab   # 参考
+### step1 计算所有模块中的连接
+```r
+moduleColors <- labels2colors(net$colors)
+connet=abs(cor(datExpr,use="p"))^6
+Alldegrees1=intramodularConnectivity(connet, moduleColors) # （主要）模块内基因之间的连接性
+head(Alldegrees1)
+```
+## step2 计算基因间的相关性，并结合上个函数的连接值，出图
+```r
+which.module="violet"
+EB= as.data.frame(datTraits[,1]); # change specific 
+names(EB) = "EB"
+GS1 = as.numeric(cor(EB,datExpr, use="p")) # （主要）计算基因间的相关程度
+GeneSignificance=abs(GS1)
+colorlevels=unique(moduleColors)[1:8]
+sizeGrWindow(9,6)
+par(mfrow=c(2,as.integer(0.5+length(colorlevels)/2)))
+par(mar = c(4,5,3,1))
+for (i in c(1:length(colorlevels)))
+{
+  whichmodule=colorlevels[[i]];
+  restrict1 = (moduleColors==whichmodule);
+  verboseScatterplot(Alldegrees1$kWithin[restrict1],
+                     GeneSignificance[restrict1], col=moduleColors[restrict1],
+                     main=whichmodule,
+                     xlab = "Connectivity", ylab = "Gene Significance", abline = TRUE)
+}
+```
+![9ea2eedf-9795-43a1-b671-e63d0ac91e98](https://user-images.githubusercontent.com/41554601/170814628-026748eb-c526-4587-8e50-9bb5af7b1658.png)
+### step3 找hubgene
+###(3) Generalizing intramodular connectivity for all genes on the array
+```r
+datKME=signedKME(datExpr, MEs, outputColumnName="MM.")
+# Display the first few rows of the data frame
+head(datKME)
+##Finding genes with high gene significance and high intramodular connectivity in
+# interesting modules
+# abs(GS1)> .9 可以根据实际情况调整参数
+# abs(datKME$MM.black)>.8 至少大于 >0.8
+FilterGenes= abs(GS1)> .9 & abs(datKME$MM.violet)>.8
+table(FilterGenes)
+```
 
 
 
