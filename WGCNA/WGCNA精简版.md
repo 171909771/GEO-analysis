@@ -76,12 +76,14 @@ plotDendroAndColors(net$dendrograms[[1]], mergedColors[net$blockGenes[[1]]],
 ## 最重要的模块与表型的相关图
 - https://www.biostars.org/p/414257/    ## 多级分类性状的处理  
 ### 这一步主要是针对于连续变量，如果是分类变量，变换成0，1代表，如果是多分类，变换成0，1，3......，也可以按照天数变换0.3.5.6、、、、
+### 分类变量一定是数字，如果是文字可以用“方法一”来转变
 #### 示例数据
 [meta.csv](https://github.com/171909771/GEO-analysis/files/8790608/meta.csv)
 ```r
 #### 方法一：计算单个多分类变量
-datTraits=model.matrix(~0+ datTraits$subtype)
-colnames(datTraits)=levels(as.factor(datTraits$subtype))
+datTraits1=model.matrix(~0+ datTraits$kgsg)
+colnames(datTraits1)=levels(as.factor(datTraits$kgsg))
+datTraits=as.data.frame(datTraits1)
 #### 方法二：计算多个多分类变量
 datTraits=read.csv("meta1.csv")
 rownames(datTraits)=datTraits$ID 
