@@ -17,7 +17,7 @@ par(mar = c(0,3,4,0))
 plot(sampleTree, main = "Sample clustering to detect outliers", sub="", xlab="", cex.lab = 1.5,
      cex.axis = 1.5, cex.main = 2)
 abline(h = 90, col = "red") #先画一条辅助线
-![image](https://user-images.githubusercontent.com/41554601/170813414-4189860d-d184-4248-a2eb-90e4b4ba7246.png)
+![Image text](https://user-images.githubusercontent.com/41554601/170813414-4189860d-d184-4248-a2eb-90e4b4ba7246.png)
 ## 聚类后裁枝
 clust = cutreeStatic(sampleTree, cutHeight = 90, minSize = 10)
 table(clust) # 0代表切除的，1代表保留的
