@@ -25,7 +25,7 @@ datExpr = datExpr0[keepSamples, ]
 ```
 ![Image text](https://user-images.githubusercontent.com/41554601/170813414-4189860d-d184-4248-a2eb-90e4b4ba7246.png)
 # 正式开始WGCNA
-## 计算软阈值
+## 计算软阈值，默认0.85
 ### 可以把R方设置到0.8
 ```r
 powers = c(c(1:10), seq(from = 12, to=20, by=2))
@@ -71,12 +71,12 @@ plotDendroAndColors(net$dendrograms[[1]], mergedColors[net$blockGenes[[1]]],
                     dendroLabels = FALSE, hang = 0.03,
                     addGuide = TRUE, guideHang = 0.05)
 ```
+![2](https://user-images.githubusercontent.com/41554601/170813844-f8af1296-7830-4820-9cdc-3e5e48ee9b8d.png)
 
 ## 最重要的模块与表型的相关图
-```r
 - https://www.biostars.org/p/414257/    ## 多级分类性状的处理  
-## 这一步主要是针对于连续变量，如果是分类变量，变换成0，1代表，如果是多分类，变换成0，1，3......，也可以按照天数变换0.3.5.6、、、、
-示例数据
+### 这一步主要是针对于连续变量，如果是分类变量，变换成0，1代表，如果是多分类，变换成0，1，3......，也可以按照天数变换0.3.5.6、、、、
+#### 示例数据
 [meta.csv](https://github.com/171909771/GEO-analysis/files/8790608/meta.csv)
 ```r
 #### 方法一：计算单个多分类变量
@@ -117,7 +117,7 @@ labeledHeatmap(Matrix = moduleTraitCor,
                zlim = c(-1,1),
                main = paste("Module-trait relationships"))
 ```
-
+![3](https://user-images.githubusercontent.com/41554601/170813947-b97d1a1f-3119-41c1-a7f6-986e98c34b65.png)
 
 ## 确定目标模块中的基因在性状和模块中都具有意义
 ```r
@@ -150,6 +150,49 @@ labeledHeatmap(Matrix = moduleTraitCor,
                      main = paste("Module membership vs. gene significance\n"),
                      cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = "red")
 ```
-  
+![step6-Module_membership-gene_significance](https://user-images.githubusercontent.com/41554601/170813986-2bd224a7-0edd-45dd-a1a2-94f5d56c7cc5.png)
+
+## 基因间的相关热图非常耗时间，建议不做，就是可以看到基因与基因之间的相关性聚类热图
+
+## 把性状放入模块中，在出相关图
+```r
+MEs = moduleEigengenes(datExpr, moduleColors)$eigengenes
+## 只有连续型性状才能计算
+## 这里把是否属 Luminal 表型这个变量0,1进行数值化
+Luminal = as.data.frame(datTraits[,3])
+names(Luminal) = "Luminal"
+## 把这个权重加入到module中
+MET = orderMEs(cbind(MEs, Luminal))
+# Plot the relationships among the eigengenes and the trait
+sizeGrWindow(5,7.5)
+par(cex = 0.9)
+plotEigengeneNetworks(MET, "", marDendro = c(0,4,1,2), marHeatmap = c(3,4,1,2), cex.lab = 0.8, xLabelsAngle
+                      = 90)
+```
+
+
+![step7-Eigengene-dendrogram](https://user-images.githubusercontent.com/41554601/170814017-b77acd26-93d5-4483-9a61-0964a3958419.png)
+###### 上图分解 分别作图
+```r
+####### 进化树
+plotEigengeneNetworks(MET, "Eigengene dendrogram", marDendro = c(0,4,2,0),
+                      plotHeatmaps = FALSE)
+####### 热图
+plotEigengeneNetworks(MET, "Eigengene adjacency heatmap", marHeatmap = c(3,4,2,2),
+                      plotDendrograms = FALSE, xLabelsAngle = 90)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
