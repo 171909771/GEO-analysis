@@ -64,6 +64,7 @@ GO.BP<-read.gmt("c5.go.bp.v7.5.1.entrez.gmt")
 # 转换同源基因
 genelist=DJ1.microshamvsmcao.markers$gene
 genehmlist=homologene(genelist, inTax = 10090, outTax = 9606)
+# 查询物种代码 homologene::taxData
 test1=merge(park7,genehmlist,by.x="gene",by.y="10090")
 GSEA_input <- test1$avg_log2FC
 names(test1)=c("a","b","c","d","e","f","g")
