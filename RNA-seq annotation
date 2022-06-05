@@ -1,3 +1,5 @@
+#NCBI 基因转换列表
+- ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/
 #convert ID  method 1
 library('biomaRt')
 ## 查看种类数据名称 listDatasets(mart)
