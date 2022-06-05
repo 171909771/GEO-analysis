@@ -17,3 +17,9 @@
 ## step1 先计算miRNA的差异基因（可以用edgeR、limma、DESeq2来分析）
 ## step2 在把数据放到miRWalk 3.0 和 miRTarBase databases中分析，出关联图
 ### miRWalk 3.0可能需要自己再分析一次
+
+# rpkm转TPM
+```r
+library("barzinePhdR")
+exp1=rpkm2tpm(exp)
+```
