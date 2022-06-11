@@ -17,6 +17,7 @@ table(Group)
 
 ################## 查看批次效应
 # cpm 去除文库大小的影响
+library(edgeR)
 dat = log2(cpm(exp)+1)
 library(tinyarray)
 pca.plot = draw_pca(dat,Group);pca.plot
