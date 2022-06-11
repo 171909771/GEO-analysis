@@ -31,5 +31,5 @@ for (i in dat){
   data <- merge(data, read.table(path, header = TRUE),by = "Geneid")
 }
 ```
-###样式
+### 样式
 ![image](https://user-images.githubusercontent.com/41554601/173173096-6e480272-c897-41b5-8fbf-42b7a4805548.png)
