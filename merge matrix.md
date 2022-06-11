@@ -11,7 +11,25 @@
   ## 然后把tmp.txt导入R语言里面用reshape2处理即可
   # 这个 tmp.txt 文件应该是100M左右大小哦。
   
+```r
   a=read.table('GSE48213_RAW/tmp.txt',sep = '\t',stringsAsFactors = F)
   library(reshape2)
   fpkm <- dcast(a,formula = V2~V1) 
-
+```
+## 合并多个csv
+```r
+dat=list.files("./")
+data=data.frame(name=read.table(path, header = TRUE)[1])
+### 方法1，更快，但是要确定合并的名字相同
+for (i in dat){
+  path=i
+  data <- cbind(data, read.table(path, header = TRUE)[2])
+}
+### 方法2：更慢，可以按照相同的名字合并
+for (i in dat){
+  path=i
+  data <- merge(data, read.table(path, header = TRUE),by = "Geneid")
+}
+```
+###样式
+![image](https://user-images.githubusercontent.com/41554601/173173096-6e480272-c897-41b5-8fbf-42b7a4805548.png)
