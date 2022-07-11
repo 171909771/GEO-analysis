@@ -91,7 +91,7 @@ design <- model.matrix(~0+Group)
 colnames(design)=levels(factor(Group))
 rownames(design)=colnames(exp)
 
-contrast.matrix<-makeContrasts(DMSOvsDHA=DMSO - DHA,levels = design)
+contrast.matrix<-makeContrasts(DMSOvsDHA=DMSO - DHA,levels = design)   ##########注意修改分组名称
 
 
 v <- voom(dge,design, normalize="quantile")
