@@ -1,0 +1,78 @@
+# https://mp.weixin.qq.com/s/kwSz5N1C0UcksFyWDXF6Ew
+
+# BiocManager::install("Mfuzz")
+library(Mfuzz)
+library(limma)
+library(clusterProfiler)
+# BiocManager::install("org.At.tair.db")  ###一定要注意物种，这个数据集是拟南芥
+library(org.At.tair.db)
+library(ggplot2)
+library(ggstatsplot)
+library(tidyverse)
+
+
+
+
+
+# 1.整理数据 --------------------------------------------------------------------
+dat <- read.csv("GSE172456_Raw_gene_counts_matrix.csv.gz")
+rownames(dat) <- dat$X
+dat$X <- NULL
+dat <- log2(edgeR::cpm(dat)+1)
+
+colnames(dat) <- str_split(colnames(dat),'M',simplify = T)[,1]
+library(limma)
+avereps_df  <- t(limma::avereps( t(dat) , ID = colnames(dat)))##对相同时间序列的表达值取平均
+avereps_df = avereps_df[,c( "Sham", "D1","D3" ,
+                            "D7" ,   "D21",  "D60"  ,  "D90"  )]
+
+
+# 2.mfuzz聚类分析 -------------------------------------------------------------
+
+
+eset <- new("ExpressionSet",exprs = avereps_df)
+
+eset <- filter.std(eset,min.std=0)
+
+eset <- standardise(eset)
+
+
+# 决定m和 cluster（c）
+# https://cloud.tencent.com/developer/article/2017446
+
+tmp <- Dmin(eset,m=m,crange=seq(4,40,4),repeats=3,visu=TRUE)
+Cluster= seq(4,40,4)
+s=which(tmp==min(tmp))
+mcluster=Cluster[s]
+
+
+m <- mestimate(eset) #  评估出最佳的m值
+cl <- mfuzz(eset, c = mcluster, m = m) # 聚类
+
+## extracts genes forming the alpha cores of soft clusters
+cl.thres <- acore(eset,cl,min.acore=0.5)  
+
+
+# 3. 画图 -------------------------------------------------------------------
+
+## cluster中的基因交集图
+overlap.cl <- overlap(cl)
+p.overlaps <- overlap.plot(cl, over = overlap.cl, thres = 0.05)
+p.overlaps
+dev.off()
+
+## 
+library(RColorBrewer)
+color.2 <- colorRampPalette(rev(c("#ff0000", "Yellow", "OliveDrab1")))(1000)
+pdf('mfuzz_clusters_plot.pdf',height = 24,width = 12)
+mfuzz.plot(eset,cl,mfrow=c(12,3),
+           new.window= FALSE,
+           time.labels= colnames(eset) ,
+           colo = color.2)
+
+dev.off()
+pdf('mfuzz_clusters_plot1.pdf',height = 24,width = 12)
+mfuzz.plot2(eset, cl, mfrow = c(12,3),
+            centre = T, x11 = F, centre.lwd = 0.2)
+dev.off()
+
