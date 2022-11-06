@@ -1,4 +1,32 @@
-#NCBI 基因转换列表
+#1.最常用的
+library(limma)
+library(edgeR)
+## 读取数据并转换一直的变量，改变dat1名称
+dat=read.delim("GSE77986_series_matrix.txt.gz",header = T,comment.char = "!")
+# library(devtools)
+# install_github("jmzeng1314/AnnoProbe")
+library(AnnoProbe)
+gpl='GPL16570'
+## 可以更换type信息，具体查看?idmap
+probe2gene=idmap(gpl,type = 'soft')
+head(probe2gene)
+
+# 整理数据
+dat1=merge(dat,probe2gene,by.x="ID_REF",by.y="ID")
+dat <- aggregate(x = dat1[,2:(length(dat1)-1)],
+                 by = list(dat1$symbol),
+                 FUN = mean)
+rownames(dat)=dat$Group.1
+dat$Group.1=NULL
+
+## 蛋白编码基因的转换
+library(AnnoProbe) 
+ids=annoGene( rownames(dat),'SYMBOL','mouse')
+procongene=ids$SYMBOL[ids$biotypes=='protein_coding']
+dat=dat[rownames(dat)%in%procongene,]
+
+
+#2.NCBI 基因转换列表
 - ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/
 #convert ID  method 1
 library('biomaRt')
@@ -9,7 +37,7 @@ ensemble2gene <- getBM(attributes=c("external_gene_name","ensembl_gene_id"), #"e
                        values =rownames(control2), # ensembl ID
                        mart = mart)
                        
-#convert ID  method 2
+#3.convert ID  method 2
 ## 三种数据类型 ENSEMBL ENTREZID SYMBOL
 library("org.Hs.eg.db")
 library("clusterProfiler")
