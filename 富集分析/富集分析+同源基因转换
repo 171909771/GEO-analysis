@@ -1,3 +1,11 @@
+# enrichR 富集分析
+- https://rdrr.io/cran/enrichR/f/vignettes/enrichR.Rmd
+library(enrichR)
+dbs <- c("GO_Molecular_Function_2018", "GO_Cellular_Component_2018", "GO_Biological_Process_2018",)
+enriched <- enrichr(genemerge, dbs)
+result1 <- enriched[["GO_Biological_Process_2018"]]
+
+
 # 富集分析
 library(openxlsx)#读取.xlsx文件
 library(ggplot2)#柱状图和点状图
