@@ -1,0 +1,43 @@
+
+
+# DESeq2归一化 --------------------------------------------------------------------
+
+library(DESeq2)
+dat1 <- dat
+coldata <-data.frame(row.names = colnames(dat1),condition=str_split(colnames(dat1),'M',simplify = T)[,1])
+dds <- DESeqDataSetFromMatrix(dat1, coldata, design= ~ condition )
+dds <- DESeq(dds) 
+dat2 <- counts(dds, normalized=TRUE)
+dat2 <- log(dat2+1)
+colnames(dat2) <- str_split(colnames(dat1),'M',simplify = T)[,1]
+boxplot(dat2)
+
+
+# edgeR归一化 --------------------------------------------------------------------
+library(edgeR)
+
+group <- str_split(colnames(dat1),'M',simplify = T)[,1]
+#（1）构建 DGEList 对象
+dgelist <- DGEList(counts = dat1, group = group)
+#（2）过滤 low count 数据，例如 CPM 标准化（推荐）
+keep <- rowSums(cpm(dgelist) > 1 ) >= 2
+dgelist <- dgelist[keep, , keep.lib.sizes = FALSE]
+### 等价
+keep<- edgeR::filterByExpr(dgelist,group=group)
+dgelist1 <- dgelist[keep, , keep.lib.sizes = FALSE]
+
+#（3）标准化，以 TMM 标准化为例
+###只能得到归一化因子，不体现在matrix上
+dgelist_norm <- calcNormFactors(dgelist, method = 'TMM')
+### 提取矩阵
+##### cpm中有个参数normalized.lib.sizes 就是是否使用上面计算的归一化因子，default T
+dat2 <- edgeR::cpm(dgelist_norm,log = T) # CPM（Counts of exon model per million mapped reads）
+colnames(dat2) <- str_split(colnames(dat1),'M',simplify = T)[,1]
+# limma归一化（待完成） --------------------------------------------------------------------
+# - https://blog.csdn.net/weixin_46587777/article/details/124923211
+
+
+
+
+# 向相同的组取平均值-------------------------------------------------------------------------
+avereps_df  <- t(limma::avereps( t(dat2) , ID = colnames(dat2)))##对相同时间序列的表达值取平均
