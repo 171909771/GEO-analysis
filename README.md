@@ -26,3 +26,8 @@ exp1=rpkm2tpm(exp)
 
 # edgeR归一化TMM方法详解
 - https://www.jianshu.com/p/935a5466b8c2
+
+# 讲解DESeq2 的原理，其中的dispersion非常精彩
+- https://wap.sciencenet.cn/blog-3431904-1308379.html?mobile=1
+##### 辅助讲解负二项分布中dispersion的由来
+- https://zhuanlan.zhihu.com/p/111632687
