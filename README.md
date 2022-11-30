@@ -23,3 +23,6 @@
 library("barzinePhdR")
 exp1=rpkm2tpm(exp)
 ```
+
+# edgeR归一化TMM方法详解
+- https://www.jianshu.com/p/935a5466b8c2
