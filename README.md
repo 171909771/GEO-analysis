@@ -32,3 +32,4 @@ exp1=rpkm2tpm(exp)
 ##### 辅助讲解负二项分布中dispersion的由来
 - https://zhuanlan.zhihu.com/p/111632687
 #### 需要看下里面的PCA 和聚类的连接
+- https://cloud.tencent.com/developer/article/1949605
