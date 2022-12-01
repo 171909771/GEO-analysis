@@ -31,3 +31,4 @@ exp1=rpkm2tpm(exp)
 - https://wap.sciencenet.cn/blog-3431904-1308379.html?mobile=1
 ##### 辅助讲解负二项分布中dispersion的由来
 - https://zhuanlan.zhihu.com/p/111632687
+#### 需要看下里面的PCA 和聚类的连接
