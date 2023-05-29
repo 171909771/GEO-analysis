@@ -33,3 +33,6 @@ exp1=rpkm2tpm(exp)
 - https://zhuanlan.zhihu.com/p/111632687
 #### 需要看下里面的PCA 和聚类的连接
 - https://cloud.tencent.com/developer/article/1949605
+
+# 数据合并
+- https://posts.careerengine.us/p/62724d778dbd8d14dd58d47a
